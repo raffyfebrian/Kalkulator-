@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Precision Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #2d6a4f;
+      --green-dark: #1b4332;
+      --green-light: #40916c;
+      --green-bg: #d8f3dc;
+      --btn-bg: #e0ebe3;
+      --btn-hover: #c8deca;
+      --page-bg: #eef2f6;
+      --sidebar-bg: #ffffff;
+      --main-bg: #ffffff;
+      --input-bg: #f0f4f8;
+      --border: #dde3ea;
+      --text: #1a2332;
+      --text-muted: #6b7a8d;
+      --text-light: #9aa5b4;
+      --postfix-bg: #edf1f5;
+      --stack-bg: #1b2a38;
+      --stack-item-bg: #253445;
+      --radius: 10px;
+      --radius-sm: 7px;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--page-bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    /* NAV */
+    nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky; top: 0; z-index: 99;
+    }
+    .nav-brand { font-size: 16px; font-weight: 700; color: var(--text); }
+    .nav-links { display: flex; align-items: center; gap: 20px; }
+    .nav-links a { font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; }
+    .nav-links a.active { color: var(--text); }
+    .nav-actions { display: flex; gap: 8px; }
+    .nav-ico {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid var(--border); background: none;
+      cursor: pointer; font-size: 14px; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-ico:hover { background: var(--input-bg); }
+
+    /* LAYOUT */
+    .wrap {
+      display: flex;
+      flex: 1;
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* SIDEBAR */
+    aside {
+      width: 270px;
+      flex-shrink: 0;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 18px 0 18px;
+      overflow-y: auto;
+    }
+    .aside-label {
+      font-size: 11px; font-weight: 600; color: var(--text-light);
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: 0 16px 10px;
+    }
+    .aside-section {
+      font-size: 11px; font-weight: 700; color: var(--green);
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: 0 16px 10px;
+    }
+    .hist-list { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; }
+    .hist-item {
+      padding: 11px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; border: 1px solid transparent;
+      transition: background .12s;
+    }
+    .hist-item:hover { background: #f3f7f4; border-color: #c8deca; }
+    .hist-time { font-size: 11px; color: #7a9cbf; margin-bottom: 3px; }
+    .hist-expr { font-size: 13px; font-weight: 500; color: var(--green); font-family: monospace; margin-bottom: 2px; }
+    .hist-result { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    /* MAIN */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--main-bg);
+      overflow: hidden;
+    }
+
+    /* INPUT AREA */
+    .input-area {
+      background: var(--input-bg);
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .input-lbl {
+      font-size: 10px; font-weight: 700; color: var(--text-light);
+      letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .expr-box {
+      font-size: 34px; font-weight: 700; font-family: 'Courier New', monospace;
+      color: var(--text); min-height: 42px; word-break: break-all;
+      line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.3px;
+      display: flex; align-items: center;
+    }
+    .expr-box .cursor {
+      display: inline-block; width: 2px; height: 34px;
+      background: var(--green); margin-left: 3px;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    .ops-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .fn-row  { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; margin-bottom: 8px; }
+    .dig-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; margin-bottom: 12px; }
+
+    .btn {
+      padding: 8px 10px; background: var(--btn-bg);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; color: var(--text);
+      cursor: pointer; transition: background .1s, transform .08s;
+      font-family: 'Courier New', monospace; text-align: center;
+    }
+    .btn:hover  { background: var(--btn-hover); }
+    .btn:active { transform: scale(.95); }
+    .btn.op { font-size: 15px; padding: 7px 14px; }
+
+    .hint {
+      background: #f3f7fb; border: 1px solid #dde5ed;
+      border-radius: var(--radius-sm); padding: 8px 12px;
+      font-size: 12px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .hint-i {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #adc4d8; color: #fff; font-size: 9px;
+      font-weight: 700; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+
+    /* EVAL BAR */
+    .eval-bar {
+      background: #fff; padding: 14px 24px;
+      display: flex; align-items: center; gap: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .btn-eval {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--green); color: #fff;
+      border: none; border-radius: var(--radius);
+      padding: 10px 20px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background .12s, transform .08s;
+      flex-shrink: 0; font-family: 'Inter', sans-serif;
+    }
+    .btn-eval:hover  { background: var(--green-dark); }
+    .btn-eval:active { transform: scale(.97); }
+
+    .postfix-box {
+      flex: 1; background: var(--postfix-bg);
+      border-radius: var(--radius); padding: 10px 14px;
+    }
+    .postfix-lbl {
+      font-size: 10px; font-weight: 700; color: var(--text-light);
+      letter-spacing: .1em; text-transform: uppercase; margin-bottom: 3px;
+    }
+    .postfix-val {
+      font-size: 14px; font-weight: 500; color: var(--text);
+      font-family: 'Courier New', monospace; letter-spacing: .04em;
+    }
+
+    .result-box {
+      background: var(--green); border-radius: var(--radius);
+      padding: 10px 18px; min-width: 110px; text-align: center;
+    }
+    .result-lbl {
+      font-size: 10px; font-weight: 700; color: rgba(255,255,255,.6);
+      letter-spacing: .1em; text-transform: uppercase; margin-bottom: 3px;
+    }
+    .result-val {
+      font-size: 28px; font-weight: 700; color: #fff;
+      font-family: 'Courier New', monospace; line-height: 1;
+    }
+
+    /* BOTTOM */
+    .bottom {
+      display: flex; gap: 14px;
+      padding: 14px 24px; flex: 1; align-items: flex-start;
+      overflow: hidden;
+    }
+
+    /* BREAKDOWN */
+    .breakdown {
+      flex: 1; border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      min-width: 0;
+    }
+    .bd-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 14px; border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+    }
+    .bd-title {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .badge {
+      font-size: 11px; font-weight: 600; color: var(--green);
+      background: #ddf0e4; border: 1px solid #b7dcca;
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .bd-table { width: 100%; border-collapse: collapse; }
+    .bd-table th {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      padding: 9px 12px; text-align: left;
+      border-bottom: 1px solid var(--border); background: #f7f9fb;
+    }
+    .bd-table td {
+      font-size: 12px; padding: 8px 12px;
+      border-bottom: 1px solid #f0f3f6; color: var(--text);
+      vertical-align: middle;
+    }
+    .bd-table tr:last-child td { border-bottom: none; }
+    .bd-table td:first-child {
+      font-family: 'Courier New', monospace; font-weight: 700;
+      color: var(--green-light); font-size: 13px;
+    }
+    .bd-table td:nth-child(3),
+    .bd-table td:nth-child(4) {
+      font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-muted);
+    }
+    .more-steps {
+      padding: 9px 12px; font-size: 12px; font-style: italic; color: var(--text-light);
+      display: none;
+    }
+    .more-steps.show { display: block; }
+
+    /* STACK */
+    .stack-panel {
+      width: 172px; flex-shrink: 0;
+      background: var(--stack-bg); border-radius: var(--radius);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .stack-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 13px; border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .stack-dot { width: 10px; height: 10px; background: #4ade80; border-radius: 50%; }
+    .stack-title { font-size: 13px; font-weight: 600; color: #dde8f2; }
+    .stack-bottom-lbl {
+      font-size: 10px; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: rgba(255,255,255,.3);
+      text-align: center; padding: 7px 0 5px;
+    }
+    .stack-div { height: 1px; background: rgba(255,255,255,.07); margin: 0 11px; }
+    .stack-items { display: flex; flex-direction: column; gap: 5px; padding: 9px 9px; flex: 1; }
+    .stack-item {
+      background: var(--stack-item-bg); border-radius: 6px;
+      padding: 8px; text-align: center;
+      font-size: 15px; font-weight: 700; color: #b8cfe0;
+      font-family: 'Courier New', monospace;
+      border: 1px solid rgba(255,255,255,.05);
+    }
+    .stack-item.top {
+      background: var(--green); color: #fff;
+      border-color: rgba(255,255,255,.15);
+    }
+    .stats-row {
+      display: flex; border-top: 1px solid rgba(255,255,255,.07); margin-top: auto;
+    }
+    .stat-cell {
+      flex: 1; padding: 9px 5px; text-align: center;
+      border-right: 1px solid rgba(255,255,255,.07);
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val { font-size: 14px; font-weight: 700; color: #dde8f2; font-family: 'Courier New', monospace; }
+    .stat-lbl { font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.3); margin-top: 1px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">Calculator</span>
+  <div class="nav-links">
+    <a href="#" class="active">Calculator</a>
+    <a href="#">Documentation</a>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-ico" title="Settings">⚙</button>
+    <button class="nav-ico" title="Help">?</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="aside-label">Precision Evaluator</div>
+    <div class="aside-section">Riwayat Perhitungan</div>
+    <div class="hist-list" id="histList">
+      <div class="hist-item" data-expr="(12+8)*5/2">
+        <div class="hist-time">12:45 PM</div>
+        <div class="hist-expr">(12 + 8) * 5 / 2</div>
+        <div class="hist-result">50</div>
+      </div>
+      <div class="hist-item" data-expr="3^2+4^2">
+        <div class="hist-time">12:30 PM</div>
+        <div class="hist-expr">3^2 + 4^2</div>
+        <div class="hist-result">25</div>
+      </div>
+      <div class="hist-item" data-expr="150/(5+10)">
+        <div class="hist-time">11:15 AM</div>
+        <div class="hist-expr">150 / (5 + 10)</div>
+        <div class="hist-result">10</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- INPUT -->
+    <div class="input-area">
+      <div class="input-lbl">Masukkan Angka</div>
+      <div class="expr-box">
+        <span id="exprText">3+4*2/(1-5)^2</span><span class="cursor"></span>
+      </div>
+      <div class="ops-row">
+        <button class="btn op" data-insert="+">+</button>
+        <button class="btn op" data-insert="-">-</button>
+        <button class="btn op" data-insert="*">*</button>
+        <button class="btn op" data-insert="/">/</button>
+        <button class="btn op" data-insert="^">^</button>
+        <button class="btn op" data-insert="(">(</button>
+        <button class="btn op" data-insert=")">)</button>
+      </div>
+      <div class="fn-row">
+        <button class="btn" data-insert="%">%</button>
+        <button class="btn" id="btnCE">CE</button>
+        <button class="btn" id="btnC">C</button>
+        <button class="btn" id="btnBs">⌫</button>
+        <button class="btn" id="btnInv">1/x</button>
+        <button class="btn" id="btnSq">x²</button>
+        <button class="btn" id="btnSqrt">²√x</button>
+        <button class="btn" data-insert="/">÷</button>
+      </div>
+      <div class="dig-row">
+        <button class="btn" data-insert="7">7</button>
+        <button class="btn" data-insert="8">8</button>
+        <button class="btn" data-insert="9">9</button>
+        <button class="btn" data-insert="4">4</button>
+        <button class="btn" data-insert="5">5</button>
+        <button class="btn" data-insert="6">6</button>
+        <button class="btn" data-insert="1">1</button>
+        <button class="btn" data-insert="2">2</button>
+        <button class="btn" data-insert="3">3</button>
+        <button class="btn" data-insert="0">0</button>
+        <button class="btn" data-insert=".">.</button>
+      </div>
+      <div class="hint">
+        <div class="hint-i">i</div>
+        Gunakan simbol: + (tambah), - (kurang), * (kali), / (bagi), ^ (pangkat).
+      </div>
+    </div>
+
+    <!-- EVAL BAR -->
+    <div class="eval-bar">
+      <button class="btn-eval" id="btnEval">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Evaluate
+      </button>
+      <div class="postfix-box">
+        <div class="postfix-lbl">Postfix</div>
+        <div class="postfix-val" id="postfixVal">—</div>
+      </div>
+      <div class="result-box">
+        <div class="result-lbl">Final Result</div>
+        <div class="result-val" id="resultVal">—</div>
+      </div>
+    </div>
+
+    <!-- BOTTOM -->
+    <div class="bottom">
+      <div class="breakdown">
+        <div class="bd-head">
+          <div class="bd-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h16M4 12h8M4 18h12"/>
+            </svg>
+            Logic Breakdown
+          </div>
+          <span class="badge">Shunting-Yard</span>
+        </div>
+        <table class="bd-table">
+          <thead>
+            <tr><th>Token</th><th>Action</th><th>Stack State</th><th>Output (RPN)</th></tr>
+          </thead>
+          <tbody id="bdBody"></tbody>
+        </table>
+        <div class="more-steps" id="moreSteps">... steps continuing ...</div>
+      </div>
+
+      <div class="stack-panel">
+        <div class="stack-head">
+          <div class="stack-dot"></div>
+          <span class="stack-title">Current Stack</span>
+        </div>
+        <div class="stack-bottom-lbl">Stack Bottom</div>
+        <div class="stack-div"></div>
+        <div class="stack-items" id="stackItems">
+          <div class="stack-item" style="color:rgba(255,255,255,.25); font-style:italic; font-size:12px;">belum dievaluasi</div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-cell">
+            <div class="stat-val" id="sSteps">0</div>
+            <div class="stat-lbl">Steps</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-val" id="sMs">0</div>
+            <div class="stat-lbl">ms</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-val" id="sBytes">0</div>
+            <div class="stat-lbl">Bytes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────
+let expr = '3+4*2/(1-5)^2';
+
+function render() {
+  document.getElementById('exprText').textContent = expr || '';
+}
+
+// ─── BUTTON WIRING ────────────────────────────────────────────────────────
+// All insert buttons (data-insert)
+document.querySelectorAll('[data-insert]').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    expr += btn.getAttribute('data-insert');
+    render();
+  });
+});
+
+// CE — clear last token
+document.getElementById('btnCE').addEventListener('click', function(e) {
+  e.stopPropagation();
+  expr = expr.replace(/[\d\.]+$/, '') || expr.slice(0, -1);
+  render();
+});
+
+// C — clear all
+document.getElementById('btnC').addEventListener('click', function(e) {
+  e.stopPropagation();
+  expr = '';
+  render();
+  resetOutput();
+});
+
+// Backspace
+document.getElementById('btnBs').addEventListener('click', function(e) {
+  e.stopPropagation();
+  expr = expr.slice(0, -1);
+  render();
+});
+
+// 1/x
+document.getElementById('btnInv').addEventListener('click', function(e) {
+  e.stopPropagation();
+  if (expr) { expr = '1/(' + expr + ')'; render(); }
+});
+
+// x²
+document.getElementById('btnSq').addEventListener('click', function(e) {
+  e.stopPropagation();
+  if (expr) { expr = '(' + expr + ')^2'; render(); }
+});
+
+// ²√x
+document.getElementById('btnSqrt').addEventListener('click', function(e) {
+  e.stopPropagation();
+  if (expr) { expr = 'sqrt(' + expr + ')'; render(); }
+});
+
+// Evaluate button
+document.getElementById('btnEval').addEventListener('click', function(e) {
+  e.stopPropagation();
+  runEvaluate();
+});
+
+// History items
+document.getElementById('histList').addEventListener('click', function(e) {
+  var item = e.target.closest('.hist-item');
+  if (item) {
+    expr = item.getAttribute('data-expr');
+    render();
+    runEvaluate();
+  }
+});
+
+// Keyboard
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'BUTTON') return;
+  if (e.key === 'Enter') { runEvaluate(); e.preventDefault(); return; }
+  if (e.key === 'Backspace') { expr = expr.slice(0, -1); render(); e.preventDefault(); return; }
+  if (e.key === 'Escape') { expr = ''; render(); resetOutput(); return; }
+  if (/^[\d\+\-\*\/\^\(\)\.\%]$/.test(e.key)) {
+    expr += e.key; render(); e.preventDefault();
+  }
+});
+
+// ─── TOKENIZER ────────────────────────────────────────────────────────────
+function tokenize(s) {
+  var tokens = [];
+  var i = 0;
+  var clean = s.replace(/\s+/g, '').replace(/sqrt\(([^)]+)\)/g, function(m, inner) {
+    return '(' + inner + ')^0.5';
+  });
+  while (i < clean.length) {
+    var ch = clean[i];
+    if (/\d/.test(ch) || ch === '.') {
+      var num = '';
+      while (i < clean.length && /[\d\.]/.test(clean[i])) num += clean[i++];
+      tokens.push({ type: 'num', val: num });
+    } else if (/[\+\-\*\/\^\(\)%]/.test(ch)) {
+      tokens.push({ type: 'op', val: ch });
+      i++;
+    } else {
+      i++;
+    }
+  }
+  return tokens;
+}
+
+// ─── SHUNTING-YARD ────────────────────────────────────────────────────────
+var PREC  = { '+':1, '-':1, '*':2, '/':2, '%':2, '^':3 };
+var RIGHT = { '^': true };
+
+function shuntingYard(tokens) {
+  var output = [], stack = [], steps = [];
+
+  function snap() {
+    return { stack: stack.slice(), output: output.slice() };
+  }
+
+  for (var i = 0; i < tokens.length; i++) {
+    var tok = tokens[i];
+    if (tok.type === 'num') {
+      output.push(tok.val);
+      var s = snap();
+      steps.push({ token: tok.val, action: 'Push to Output', stack: s.stack, output: s.output });
+    } else if (tok.val === '(') {
+      stack.push('(');
+      var s = snap();
+      steps.push({ token: '(', action: 'Push to Stack', stack: s.stack, output: s.output });
+    } else if (tok.val === ')') {
+      while (stack.length && stack[stack.length-1] !== '(') {
+        output.push(stack.pop());
+      }
+      if (stack.length) stack.pop();
+      var s = snap();
+      steps.push({ token: ')', action: 'Pop until (', stack: s.stack, output: s.output });
+    } else {
+      var op = tok.val;
+      while (stack.length) {
+        var top = stack[stack.length-1];
+        if (top === '(') break;
+        if (PREC[top] === undefined) break;
+        if (PREC[top] > PREC[op] || (PREC[top] === PREC[op] && !RIGHT[op])) {
+          output.push(stack.pop());
+        } else break;
+      }
+      stack.push(op);
+      var s = snap();
+      var action = 'Push to Stack';
+      if (steps.length > 0) {
+        var prev = steps[steps.length-1];
+        if (PREC[prev.token] !== undefined && PREC[prev.token] > PREC[op]) {
+          action = 'Push to Stack (Prec)';
+        }
+      }
+      steps.push({ token: op, action: action, stack: s.stack, output: s.output });
+    }
+  }
+
+  while (stack.length) {
+    var popped = stack.pop();
+    output.push(popped);
+    var s = snap();
+    steps.push({ token: popped, action: 'Flush Stack', stack: s.stack, output: s.output });
+  }
+
+  return { rpn: output, steps: steps };
+}
+
+// ─── EVAL RPN ─────────────────────────────────────────────────────────────
+function evalRPN(rpn) {
+  var s = [];
+  for (var i = 0; i < rpn.length; i++) {
+    var t = rpn[i];
+    var n = parseFloat(t);
+    if (!isNaN(n)) {
+      s.push(n);
+    } else {
+      var b = s.pop(), a = s.pop();
+      if (t === '+') s.push(a + b);
+      else if (t === '-') s.push(a - b);
+      else if (t === '*') s.push(a * b);
+      else if (t === '/') s.push(a / b);
+      else if (t === '%') s.push(a % b);
+      else if (t === '^') s.push(Math.pow(a, b));
+    }
+  }
+  return s[0];
+}
+
+// ─── MAIN EVALUATE ────────────────────────────────────────────────────────
+function runEvaluate() {
+  if (!expr.trim()) return;
+  var t0 = performance.now();
+  try {
+    var tokens = tokenize(expr);
+    if (tokens.length === 0) { showError('Ekspresi kosong'); return; }
+
+    var sy = shuntingYard(tokens);
+    var rpn = sy.rpn;
+    var steps = sy.steps;
+    var result = evalRPN(rpn);
+    var ms = (performance.now() - t0).toFixed(2);
+
+    if (result === undefined || isNaN(result)) { showError('Hasil tidak valid'); return; }
+
+    // Format result
+    var disp = (result % 1 === 0) ? String(result) : parseFloat(result.toFixed(8)).toString();
+
+    document.getElementById('postfixVal').textContent = rpn.join(' ');
+    document.getElementById('resultVal').textContent  = disp;
+
+    // Breakdown table
+    var tbody = document.getElementById('bdBody');
+    tbody.innerHTML = '';
+    var SHOW = 6;
+    var showSteps = steps.slice(0, SHOW);
+    showSteps.forEach(function(s) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + s.token + '</td>' +
+        '<td>' + s.action + '</td>' +
+        '<td>[' + s.stack.join(', ') + ']</td>' +
+        '<td>' + s.output.join(', ') + '</td>';
+      tbody.appendChild(tr);
+    });
+    var more = document.getElementById('moreSteps');
+    if (steps.length > SHOW) {
+      more.className = 'more-steps show';
+      more.textContent = '... ' + (steps.length - SHOW) + ' step lagi tersembunyi ...';
+    } else {
+      more.className = 'more-steps';
+    }
+
+    // Stack panel — show intermediate stack from last breakdown step
+    var lastS = steps[steps.length - 1];
+    var finalStack = lastS ? lastS.stack : [];
+    var stackEl = document.getElementById('stackItems');
+    stackEl.innerHTML = '';
+    if (finalStack.length === 0) {
+      var d = document.createElement('div');
+      d.className = 'stack-item top';
+      d.textContent = 'empty';
+      stackEl.appendChild(d);
+    } else {
+      finalStack.forEach(function(item, idx) {
+        var d = document.createElement('div');
+        d.className = 'stack-item' + (idx === finalStack.length - 1 ? ' top' : '');
+        d.textContent = item;
+        stackEl.appendChild(d);
+      });
+    }
+
+    // Stats
+    document.getElementById('sSteps').textContent = steps.length;
+    document.getElementById('sMs').textContent    = ms;
+    document.getElementById('sBytes').textContent = new TextEncoder().encode(expr).length;
+
+    // Add to history
+    addHistory(expr, disp);
+
+  } catch(err) {
+    showError('Error: ' + err.message);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('resultVal').textContent  = 'ERR';
+  document.getElementById('postfixVal').textContent = msg;
+}
+
+function resetOutput() {
+  document.getElementById('postfixVal').textContent = '—';
+  document.getElementById('resultVal').textContent  = '—';
+  document.getElementById('bdBody').innerHTML = '';
+  document.getElementById('moreSteps').className = 'more-steps';
+  document.getElementById('stackItems').innerHTML =
+    '<div class="stack-item" style="color:rgba(255,255,255,.25);font-style:italic;font-size:12px;">belum dievaluasi</div>';
+  document.getElementById('sSteps').textContent = '0';
+  document.getElementById('sMs').textContent    = '0';
+  document.getElementById('sBytes').textContent = '0';
+}
+
+function addHistory(e, r) {
+  var now  = new Date();
+  var h12  = now.getHours() % 12 || 12;
+  var mm   = String(now.getMinutes()).padStart(2,'0');
+  var ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+  var time = h12 + ':' + mm + ' ' + ampm;
+  var list = document.getElementById('histList');
+  var item = document.createElement('div');
+  item.className = 'hist-item';
+  item.setAttribute('data-expr', e);
+  item.innerHTML =
+    '<div class="hist-time">' + time + '</div>' +
+    '<div class="hist-expr">' + e + '</div>' +
+    '<div class="hist-result">' + r + '</div>';
+  list.insertBefore(item, list.firstChild);
+}
+
+// init
+render();
+</script>
+</body>
+</html>
